@@ -1,16 +1,37 @@
-name: Deployment
+name: Node.js deploy using actions
 
 on:
   push:
-    branches:
-      - development
+    branches: [ "development" ]
+  pull_request:
+    branches: [ "development" ]
 
 jobs:
-  deployment:
+  build:
+
     runs-on: ubuntu-latest
-    environment: 
-      name: production
-      url: https://github.com/Naveen-Maddimsetty/samplenode/
+
+    strategy:
+      matrix:
+        node-version: [16.x]
+# See supported Node.js release schedule at https://nodejs.org/en/about/releases/
+
     steps:
-      - name: deploy
-        # ...deployment-specific steps
+    - uses: actions/checkout@v3
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v3
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+        lfs: true
+
+    - run: npm install
+    - run: npm run build  --href "/samplenode/" --if-present
+    - run: npm test
+    - name: Deploy 🚀
+      uses: JamesIves/github-pages-deploy-action@v4
+      with:
+        token: ${{ secrets.TOKEN }}
+        target_branch: deploy  # The branch the action should deploy to.
+        folder: build # The folder the action should deploy.
+        single-commit: true
